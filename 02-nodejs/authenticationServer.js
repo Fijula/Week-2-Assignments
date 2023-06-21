@@ -29,9 +29,89 @@
   Testing the server - run `npm run test-authenticationServer` command in terminal
  */
 
-const express = require("express")
-const PORT = 3000;
+  const express = require("express");
 const app = express();
-// write your logic here, DONT WRITE app.listen(3000) when you're running tests, the tests will automatically start the server
+const PORT = 3000;
+
+const users = [];
+
+app.use(express.json());
+
+app.post('/signup', (req, res) => {
+  const { username, password, firstName, lastName } = req.body;
+
+  // Check if username already exists
+  const existingUser = users.find(user => user.username === username);
+  if (existingUser) {
+    res.status(400).send('Username already exists');
+    return;
+  }
+
+  // Generate a unique ID for the new user
+  const id = Math.floor(Math.random() * 1000);
+
+  // Create a new user object
+  const newUser = {
+    id,
+    username,
+    password,
+    firstName,
+    lastName
+  };
+
+  // Add the new user to the users array
+  users.push(newUser);
+
+  res.status(201).send('Signup successful');
+});
+
+app.post('/login', (req, res) => {
+  const { username, password } = req.body;
+
+  // Find the user with the provided username
+  const user = users.find(user => user.username === username);
+
+  // Check if the user exists and the password matches
+  if (user && user.password === password) {
+    const { firstName, lastName, id } = user;
+    res.status(200).json({ firstName, lastName, id });
+  } else {
+    res.status(401).send('Unauthorized');
+  }
+});
+
+app.get('/data', (req, res) => {
+  const { username, password } = req.headers;
+
+  // Check if username and password are provided
+  if (!username || !password) {
+    res.status(401).send('Unauthorized');
+    return;
+  }
+
+  // Find the user with the provided username
+  const user = users.find(user => user.username === username);
+
+  // Check if the user exists and the password matches
+  if (user && user.password === password) {
+    const userData = users.map(user => ({
+      id: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName
+    }));
+
+    res.status(200).json({ users: userData });
+  } else {
+    res.status(401).send('Unauthorized');
+  }
+});
+
+app.all('*', (req, res) => {
+  res.status(404).send('Route not found');
+});
+
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
 
 module.exports = app;
